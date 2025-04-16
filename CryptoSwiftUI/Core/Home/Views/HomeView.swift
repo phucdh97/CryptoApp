@@ -22,9 +22,8 @@ struct HomeView: View {
             // Content layer
             VStack {
                 homeHeader
-                
-                List {
-                    CoinRowView(coin: DeveloperPreview.instance.coin, showHoldingColumn: false)
+                ForEach(vm.allCoins) { coin in
+                    CoinRowView(coin: coin, showHoldingColumn: false)
                 }
                 .listStyle(PlainListStyle())
                 
