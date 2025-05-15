@@ -12,15 +12,11 @@ class HomeViewModel: ObservableObject {
     @Published var allCoins: [CoinModel] = []
     @Published var portfolioCoins: [CoinModel] = []
     @Published var searchText: String = ""
-    @Published var statistics: [StatisticModel] = [
-        StatisticModel(title: "Title1", value: "value1", percentageChange: 10.0)
-        , StatisticModel(title: "Title2", value: "value2")
-        , StatisticModel(title: "Title3", value: "value 3", percentageChange: -4.0)
-        , StatisticModel(title: "Title4", value: "value4")
-    ]
+    @Published var statistics: [StatisticModel] = []
     
     private var cancellables: Set<AnyCancellable> = []
     private let dataService = CoinDataService()
+    private let marketDataService = MarketDataService()
     
     init() {
         addSubscribers()
@@ -35,6 +31,13 @@ class HomeViewModel: ObservableObject {
                 self?.allCoins = filterdCoins
             }
             .store(in: &cancellables)
+        
+        marketDataService.$marketData
+            .map(parseMarketData)
+            .sink { [weak self] data in
+                self?.statistics = data
+            }
+            .store(in: &cancellables)
     }
     
     private func filterCoins(text: String, coins: [CoinModel]) -> [CoinModel] {
@@ -46,5 +49,21 @@ class HomeViewModel: ObservableObject {
             coin.symbol.lowercased().contains(lowercasedText) ||
             coin.id.lowercased().contains(lowercasedText)
         }
+    }
+    
+    private func parseMarketData(data: MarketDataModel?) -> [StatisticModel] {
+        var stats = [StatisticModel]()
+        guard let data = data else { return stats }
+        let marketCap = StatisticModel(title: "Market Cap", value: data.marketCap, percentageChange: data.marketCapChangePercentage24HUsd)
+        let volume = StatisticModel(title: "Volume", value: data.volumn)
+        let btcDominance = StatisticModel(title: "BTC Dominance", value: data.btcDominance)
+        let portfolioValue = StatisticModel(title: "Portfolio Value", value: "$000", percentageChange: 0)
+        stats.append(contentsOf: [
+            marketCap,
+            volume,
+            btcDominance,
+            portfolioValue
+        ])
+        return stats
     }
 }
